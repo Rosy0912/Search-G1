@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Experiment artifacts
+data/
+artifacts/
+verl_checkpoints/
+checkpoints/
+dumps/
+probes/
+outputs/
+logs/
+results/
+wandb/
+multirun/
+.hydra/
+slurm-*.out
+
+# Large model/data files
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.pkl
+*.npz
+*.npy
+*.parquet
+*.arrow
+*.index
+*.faiss
+
+# Editors and OS files
+.DS_Store
+.idea/
+.vscode/
+*~
