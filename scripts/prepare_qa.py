@@ -68,6 +68,10 @@ def main() -> None:
     parser.add_argument("--calibration-size", type=int, default=0)
     parser.add_argument("--calibration-offset", type=int, default=0,
                         help="Start index of a question-disjoint calibration slice.")
+    parser.add_argument("--validation-output")
+    parser.add_argument("--validation-size", type=int, default=0)
+    parser.add_argument("--validation-offset", type=int, default=0,
+                        help="Start index of a question-disjoint model-selection slice.")
     args = parser.parse_args()
 
     config = DATASET_ALIASES[args.dataset]
@@ -98,27 +102,57 @@ def main() -> None:
         desc=f"Preparing {config}/{split}",
     )
 
-    policy_data = converted
-    if args.calibration_output:
-        if args.calibration_size <= 0:
-            raise ValueError("--calibration-size must be positive with --calibration-output")
-        start = args.calibration_offset
-        end = start + args.calibration_size
+    holdouts = []
+    for name, output_name, size, offset in (
+        ("calibration", args.calibration_output, args.calibration_size, args.calibration_offset),
+        ("validation", args.validation_output, args.validation_size, args.validation_offset),
+    ):
+        if output_name is None:
+            if size:
+                raise ValueError(f"--{name}-output is required with --{name}-size")
+            continue
+        if size <= 0:
+            raise ValueError(f"--{name}-size must be positive with --{name}-output")
+        start = offset
+        end = start + size
         if start < 0 or end > len(converted):
-            raise ValueError(f"calibration slice [{start}:{end}] exceeds {len(converted)} rows")
-        calibration = converted.select(range(start, end))
-        remaining = []
-        if start:
-            remaining.append(converted.select(range(0, start)))
-        if end < len(converted):
-            remaining.append(converted.select(range(end, len(converted))))
-        if not remaining:
-            raise ValueError("calibration split cannot consume the full policy-training split")
-        policy_data = remaining[0] if len(remaining) == 1 else datasets.concatenate_datasets(remaining)
-        calibration_output = Path(args.calibration_output)
-        calibration_output.parent.mkdir(parents=True, exist_ok=True)
-        calibration.to_parquet(str(calibration_output))
-        print(f"wrote {len(calibration)} calibration examples to {calibration_output}")
+            raise ValueError(f"{name} slice [{start}:{end}] exceeds {len(converted)} rows")
+        holdouts.append((start, end, name, Path(output_name)))
+
+    holdouts.sort()
+    for previous, current in zip(holdouts, holdouts[1:]):
+        if current[0] < previous[1]:
+            raise ValueError(
+                f"{previous[2]} slice [{previous[0]}:{previous[1]}] overlaps "
+                f"{current[2]} slice [{current[0]}:{current[1]}]"
+            )
+
+    destinations = [("policy", Path(args.output))]
+    destinations.extend((name, destination) for _, _, name, destination in holdouts)
+    resolved = {}
+    for name, destination in destinations:
+        key = destination.expanduser().resolve()
+        if key in resolved:
+            raise ValueError(
+                f"{name} output and {resolved[key]} output resolve to the same path: {key}"
+            )
+        resolved[key] = name
+
+    for start, end, name, destination in holdouts:
+        subset = converted.select(range(start, end))
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        subset.to_parquet(str(destination))
+        print(f"wrote {len(subset)} {name} examples to {destination}")
+
+    held_out_indices = {
+        index
+        for start, end, _, _ in holdouts
+        for index in range(start, end)
+    }
+    policy_indices = [index for index in range(len(converted)) if index not in held_out_indices]
+    if not policy_indices:
+        raise ValueError("calibration and validation slices cannot consume the full training split")
+    policy_data = converted.select(policy_indices)
 
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)

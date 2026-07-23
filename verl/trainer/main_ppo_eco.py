@@ -14,10 +14,11 @@
 """Search-G1 training entry built on the Search-R1/veRL runtime.
 
 The primary training path uses two representation readouts served by
-``probe_server.py``.  The answer-commit readout estimates Evidence Dependence and
-the prompt-state readout estimates closed-book sufficiency.  Their product after
-the Search Necessity gate forms the grounding bonus.  A bounded cost discourages
-repeated search, and retrieved observations are masked by the rollout/trainer code.
+``probe_server.py``. The answer-commit readout estimates answer sensitivity to
+evidence deletion, and the prompt-state readout estimates closed-book sufficiency.
+Their product after the retrieval-necessity gate forms the representation-based
+grounding bonus. A bounded cost penalizes repeated response-side search markers,
+and retrieved observations are masked by the rollout/trainer code.
 
 The same reward manager also exposes counterfactual-document metrics during
 evaluation.  Those metrics are monitoring signals and are not required for the
@@ -39,7 +40,7 @@ _QUESTION_RE = re.compile(r"Question:\s*(.+?)\s*(?:<\|im_end\|>|\n|$)", re.DOTAL
 
 
 def _causal_trust(solution_str: str, floor: float = 0.3) -> float:
-    """Fallback: causal temporal proxy when counterfactual unavailable."""
+    """Fallback temporal-ordering heuristic when the counterfactual judge is unavailable."""
     searches = re.findall(r"<search>(.*?)</search>", solution_str, re.DOTALL)
     info_end = [m.end() for m in _INFO_END_RE.finditer(solution_str)]
     ans = solution_str.rfind("<answer>")
@@ -70,7 +71,7 @@ class EcoRewardManager():
       ECO_COST_ONLY    : "1" -> D_trust≡1 (ablation)
       ECO_TRUST_ONLY   : "1" -> no cost factor (ablation)
       CF_JUDGE_URL     : counterfactual judge endpoint
-      ECO_USE_CF       : "1" (default) use online counterfactual; "0" use causal proxy
+      ECO_USE_CF       : "1" (default) use online counterfactual; "0" use temporal fallback
     """
 
     BONUS = 0.2
@@ -120,11 +121,11 @@ class EcoRewardManager():
         self.trust_signal = os.environ.get("ECO_TRUST_SIGNAL", "cf")
         self.w_trust = float(os.environ.get("ECO_W_TRUST", "1.0"))
         self.w_perf = float(os.environ.get("ECO_W_PERF", "0.3"))
-        self.w_cost = float(os.environ.get("ECO_W_COST", "0.2"))
+        self.w_cost = float(os.environ.get("ECO_W_COST", "0.02"))
         self.hall_penalty = float(os.environ.get("ECO_HALL_PENALTY", "0.5"))
         # 'balanced' variant: perf floor + additive grounding bonus + cost (no perf-trust artifact)
         self.bal_nosearch_bonus = float(os.environ.get("ECO_BAL_NOSEARCH_BONUS", "0.5"))
-        self.bal_ground = float(os.environ.get("ECO_BAL_GROUND", "0.5"))
+        self.bal_ground = float(os.environ.get("ECO_BAL_GROUND", "0.6"))
         # scale of grounding bonus on WRONG answers (anti-collapse; <<1 so wrongness
         # never becomes profitable, yet >0 keeps within-group variance in all-wrong groups)
         self.wrong_ground_scale = float(os.environ.get("ECO_WRONG_GROUND_SCALE", "0.15"))
@@ -232,7 +233,7 @@ class EcoRewardManager():
             except Exception as e:
                 print(f"[cf_judge] {path} request failed (attempt {attempt+1}/10): {e}", flush=True)
                 _t.sleep(min(30, 5 * (attempt + 1)))
-        print(f"[cf_judge] {path} UNAVAILABLE -> fallback to causal proxy", flush=True)
+        print(f"[cf_judge] {path} UNAVAILABLE -> temporal-ordering fallback", flush=True)
         return None
 
     def _probe_call(self, items):

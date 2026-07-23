@@ -1,8 +1,8 @@
-"""Fit Search-G1 Evidence Dependence and Search Necessity readouts.
+"""Fit Search-G1 evidence-sensitivity and closed-book-sufficiency readouts.
 
-The paper configuration uses the final answer-token state (``Xa``) and the evidence
-ablation label (``flip``).  These semantics are the command-line defaults and remain
-fixed during co-evolution.  ``auto`` modes are retained for explicit diagnostic
+The paper configuration uses the final answer-token state (``Xa``) and the
+evidence-deletion sensitivity label (``flip``). These semantics are the command-line
+defaults and remain fixed during co-evolution. ``auto`` modes are retained for explicit diagnostic
 sweeps, but are not the default training protocol.  Model and layer selection use
 question-grouped held-out splits.
 

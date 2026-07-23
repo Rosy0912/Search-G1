@@ -1,7 +1,7 @@
 """Search-G1 reward--policy co-evolution controller.
 
 The controller watches actor checkpoints, generates fresh calibration trajectories
-with each new checkpoint, refits the Evidence Dependence and Search Necessity
+with each new checkpoint, refits the evidence-sensitivity and closed-book-sufficiency
 readouts, and atomically updates the manifest consumed by ``probe_server.py``.
 It also logs closed-book correctness on a fixed held-out slice.
 

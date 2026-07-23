@@ -8,8 +8,8 @@ For each rollout we dump:
   - answer-delimiter and final answer-token hidden states at selected layers
   - prompt-last-token hidden states (per-question boundary probe input)
   - EM correctness (free label)
-  - counterfactual flippability label : re-decode answer with <information> emptied;
-        if answer changes -> grounded (1).
+  - evidence-deletion sensitivity label: re-decode with <information> emptied;
+        an answer change gives the operational positive label (1).
   - per-question closed-book label    : greedy decode with NO search; EM = inside boundary.
 
 Usage:
