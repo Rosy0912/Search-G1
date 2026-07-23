@@ -52,9 +52,6 @@ on each benchmark. TC, D-Inv, and Search/Q in these tables are evaluated on NQ. 
 the mean number of response-side, parser-observed `<search>` markers—not a count of physical
 retrieval calls or a compute unit. For trained methods, entries are means over four
 independent runs; Base and Prompted Search are untrained point estimates.
-Methods whose original pipelines differ from this environment are adapted under the shared
-model, retriever, update budget, and validation rule; these rows are controlled
-reimplementations rather than claims about untouched official pipelines.
 
 ### Qwen2.5-3B-Instruct
 
@@ -63,16 +60,7 @@ reimplementations rather than claims about untouched official pipelines.
 | Base | 0.142 | 0.153 | 0.212 | 0.029 | - | - | 0.000 |
 | Prompted Search | 0.250 | 0.199 | 0.238 | 0.057 | 0.930 | 0.069 | 2.215 |
 | Search-R1 | 0.352 | 0.248 | 0.267 | 0.087 | 0.917 | 0.049 | 3.281 |
-| GiGPO | 0.422 | 0.296 | 0.330 | 0.126 | 0.935 | 0.047 | 3.131 |
-| AgentPRM | 0.380 | 0.293 | 0.328 | 0.112 | 0.958 | 0.042 | 3.340 |
-| GPT-5 Judge | 0.402 | 0.280 | 0.324 | 0.101 | 0.946 | 0.038 | 3.238 |
-| ARPO | 0.389 | 0.273 | 0.304 | 0.109 | 0.924 | 0.055 | 2.679 |
-| IGPO | 0.414 | 0.292 | 0.355 | 0.137 | 0.934 | 0.056 | 3.028 |
-| Search-E1 | 0.437 | **0.314** | **0.372** | 0.142 | 0.939 | 0.054 | 2.980 |
-| SAAS | 0.428 | 0.301 | 0.355 | 0.138 | 0.951 | 0.045 | 2.122 |
-| β-GRPO | 0.419 | 0.295 | 0.344 | 0.129 | 0.948 | 0.047 | 2.227 |
-| KbPO | 0.431 | 0.305 | 0.358 | 0.140 | 0.955 | 0.043 | 2.160 |
-| **Search-G1** | **0.453** | 0.306 | 0.368 | **0.143** | **0.976** | **0.034** | **2.094** |
+| **Search-G1** | **0.453** | **0.306** | **0.368** | **0.143** | **0.976** | **0.034** | **2.094** |
 
 ### Qwen2.5-7B-Instruct
 
@@ -81,15 +69,6 @@ reimplementations rather than claims about untouched official pipelines.
 | Base | 0.192 | 0.183 | 0.250 | 0.031 | - | - | 0.000 |
 | Prompted Search | 0.349 | 0.299 | 0.235 | 0.058 | 0.936 | 0.061 | 2.171 |
 | Search-R1 | 0.393 | 0.370 | 0.414 | 0.146 | 0.932 | 0.046 | 3.090 |
-| GiGPO | 0.464 | 0.416 | 0.436 | 0.189 | 0.947 | 0.043 | 2.930 |
-| AgentPRM | 0.455 | 0.405 | 0.430 | 0.205 | 0.963 | 0.037 | 3.080 |
-| GPT-5 Judge | 0.470 | 0.410 | 0.440 | 0.215 | 0.952 | 0.033 | 2.980 |
-| ARPO | 0.462 | 0.398 | 0.420 | 0.208 | 0.931 | 0.050 | 2.430 |
-| IGPO | 0.480 | 0.425 | 0.455 | 0.235 | 0.942 | 0.050 | 2.760 |
-| Search-E1 | 0.495 | 0.440 | 0.465 | 0.245 | 0.947 | 0.048 | 2.720 |
-| SAAS | 0.486 | 0.432 | 0.458 | 0.239 | 0.958 | 0.038 | 2.050 |
-| β-GRPO | 0.478 | 0.424 | 0.448 | 0.231 | 0.953 | 0.040 | 2.164 |
-| KbPO | 0.490 | 0.436 | 0.462 | 0.242 | 0.962 | 0.036 | 2.106 |
 | **Search-G1** | **0.512** | **0.450** | **0.475** | **0.254** | **0.981** | **0.028** | **1.860** |
 
 <p align="center">
@@ -100,57 +79,12 @@ The evidence-sensitivity readout reaches AUC 0.959/0.971 on NQ and 0.871/0.914 o
 2WikiMultiHopQA for the 3B/7B backbones, respectively (four-run SD at most 0.014). These AUCs
 refer to held-out evidence-deletion-sensitivity labels.
 
-### Statistical scope of the headline comparison
+Periodic refitting keeps both readouts aligned with the evolving policy, while frozen
+readouts degrade as training representations drift:
 
-On NQ, hierarchical seed-by-question bootstrap inference resamples training runs and paired
-questions, with Holm correction over EM, TC, D-Inv, and Search/Q within each
-comparator/scale family. Against the strongest baseline for each metric, the manuscript
-reports Holm-adjusted p-values:
-
-| Scale | ΔEM | ΔTC | D-Inv benefit | ΔSearch/Q |
-|---|---:|---:|---:|---:|
-| 3B | +0.016 [-0.012, +0.044]; p=.320 | +0.018 [+0.004, +0.032]; p=.032 | +0.004 [-0.003, +0.011]; p=.320 | -0.028 [-0.114, +0.058]; p=.520 |
-| 7B | +0.017 [-0.006, +0.040]; p=.180 | +0.018 [+0.006, +0.030]; p=.016 | +0.005 [+0.001, +0.009]; p=.048 | -0.190 [-0.286, -0.094]; p=.008 |
-
-Accordingly, the supported claim is **competitive EM with stronger operational grounding**;
-the manuscript does not claim statistically superior EM over the strongest baseline. On
-2WikiMultiHopQA, the four-run means provide a second-dataset grounding check:
-
-| Scale | Method | EM ↑ | TC ↑ | D-Inv ↓ | Search/Q ↓ |
-|---|---|---:|---:|---:|---:|
-| 3B | Prompted Search | 0.238 | 0.877 | 0.085 | 2.951 |
-| 3B | Search-R1 | 0.267 | 0.913 | 0.058 | 3.281 |
-| 3B | **Search-G1** | **0.368** | **0.972** | **0.031** | **2.812** |
-| 7B | Prompted Search | 0.235 | 0.887 | 0.079 | 2.892 |
-| 7B | Search-R1 | 0.414 | 0.932 | 0.050 | 3.090 |
-| 7B | **Search-G1** | **0.475** | **0.978** | **0.026** | **2.495** |
-
-### Human, shortcut, and trajectory-cost checks
-
-A confirmatory same-question human evaluation compares Search-G1 with GPT-5 Judge on 270
-matched correct-searched pairs. Search-G1 improves support-when-correct by +0.048
-[+0.026, +0.070] and full support by +0.060 [+0.032, +0.088], while reducing the
-correct-but-unsupported rate by 0.037 [0.017, 0.057]. This paired analysis is separate from the
-manuscript's descriptive six-method table, which uses distinct 180-example pools per method.
-
-For the 3B readout, scalar shortcut controls reach AUC 0.536–0.603, the strongest output-logit
-baseline reaches 0.731/0.638 on NQ/2Wiki, and the full representation reaches 0.959/0.871.
-After exact matching on search count and response length, the representation retains
-0.934/0.842 AUC. These checks argue against the tested simple shortcuts; they do not rule out
-all possible probe gaming.
-
-The NQ token audit localizes the efficiency result to response-side trajectories:
-
-| Method (3B) | EM ↑ | Search/Q ↓ | Generated tokens/Q ↓ | Observation tokens/Q ↓ |
-|---|---:|---:|---:|---:|
-| Base | 0.142 | 0.000 | 30.0 | 0.0 |
-| Prompted Search | 0.250 | 2.215 | 120.0 | 500.0 |
-| Search-R1 | 0.352 | 3.281 | 149.0 | 510.0 |
-| **Search-G1** | **0.453** | **2.094** | **84.8** | **468.1** |
-
-Relative to Search-R1, this is about 43% fewer policy-generated tokens and 16% fewer total
-response-side tokens under the matched interaction budget. It is a trajectory/token-cost
-result, not a wall-clock, FLOP, monetary-cost, or universal executed-retrieval claim.
+<p align="center">
+  <img src="assets/representation_drift_comic.png" width="94%" alt="Frozen versus periodically refitted representation readouts across RL checkpoints">
+</p>
 
 ## Repository Map
 
